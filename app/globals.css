@@ -24,3 +24,53 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* pixel rendering everywhere */
+canvas, img.pixel, .pixel, .pixel * {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* optional: disable font smoothing for retro look */
+body {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* пиксельный стиль (чтобы не мыло) */
+.pixel, .pixel * {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* убрать подсветку тапа на мобилке */
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+.pixel {
+  image-rendering: pixelated;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #000; /* можно поменять */
+}
+
+/* пиксельная отрисовка */
+.pixel, .pixel img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+button { -webkit-tap-highlight-color: transparent; }
