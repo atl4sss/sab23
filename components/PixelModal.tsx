@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function PixelModal({
   open,
@@ -13,6 +13,16 @@ export default function PixelModal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  // close on Esc
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
@@ -22,6 +32,7 @@ export default function PixelModal({
         onClick={onClose}
         aria-label="close overlay"
       />
+
       <div
         className="relative w-full max-w-[720px] bg-[#0b1220] text-white p-4 border border-white/15"
         style={{
@@ -31,11 +42,12 @@ export default function PixelModal({
       >
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="text-sm font-semibold">{title}</div>
+
           <button
             className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-xs"
             onClick={onClose}
           >
-            закрыть
+            close
           </button>
         </div>
 

@@ -12,6 +12,7 @@ type Hotspot = {
   h: number; // height %
   content: string;
   z?: number;
+  videoUrl?: string; // <-- add
 };
 
 function clamp(n: number, a: number, b: number) {
@@ -26,13 +27,15 @@ export default function RoomScene() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
   const [wrapSize, setWrapSize] = useState({ w: 0, h: 0 });
-  const [imgSize, setImgSize] = useState({ w: 2560, h: 1600 });
+  const [imgSize, setImgSize] = useState({ w: 1920, h: 1080 });
 
   const [debug, setDebug] = useState(false);
   const [edit, setEdit] = useState(false);
 
   const [modalId, setModalId] = useState<string | null>(null);
 
+  const [showVideo, setShowVideo] = useState(false);
+  useEffect(() => setShowVideo(false), [modalId]);
   // для редактора
   const [selectedId, setSelectedId] = useState<string>("cake");
   const [dragging, setDragging] = useState(false);
@@ -49,7 +52,7 @@ export default function RoomScene() {
         w: 13.6,
         h: 24.7,
         z: 30,
-        content: "Sab, make 3 wishes. I’ll genuinely try to make at least one come true soon 😭🤍",
+        content: "I already owe you two wishes.\nNow add a third one. You have 3 months. Choose wisely 😌",
       },
       {
         id: "presents",
@@ -58,17 +61,8 @@ export default function RoomScene() {
         y: 60,
         w: 19.2,
         h: 34.4,
-        content: "Open them: there’s a secret inside. (we can add a video/gallery/message later)",
-      },
-      {
-        id: "sofa",
-        title: "Sofa 🛋️",
-        x: 29.5,
-        y: 49.9,
-        w: 41.4,
-        h: 34.3,
-        z: 10,
-        content: "This is the sofa for cozy nights. The cat says: “meow, Sab is the best” 🐱",
+        content: "Open them: there’s a secret inside!",
+        videoUrl: "/videos/ronaldo.mp4",
       },
       {
         id: "boombox",
@@ -284,7 +278,7 @@ export default function RoomScene() {
     >
       {/* фон */}
       <img
-        src="/scene/room1920.png"
+        src="/scene/room.png"
         alt="room"
         draggable={false}
         className="absolute"
@@ -298,8 +292,8 @@ export default function RoomScene() {
         onLoad={(e) => {
           const img = e.currentTarget;
           setImgSize({
-            w: img.naturalWidth || 2560,
-            h: img.naturalHeight || 1600,
+            w: img.naturalWidth || 1920,
+            h: img.naturalHeight || 1080,
           });
         }}
       />
@@ -382,7 +376,40 @@ export default function RoomScene() {
       </div>
 
       <PixelModal open={!!active} title={active?.title || ""} onClose={() => setModalId(null)}>
-        {active?.content || ""}
+        {active?.id === "presents" && active?.videoUrl ? (
+          <div className="space-y-3">
+            <div>{active.content}</div>
+
+            {!showVideo ? (
+              <button
+                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-sm"
+                onClick={() => setShowVideo(true)}
+              >
+                open the surprise ▶
+              </button>
+            ) : (
+              <div className="w-full flex justify-center">
+                <div
+                  className="border border-white/15 overflow-hidden"
+                  style={{
+                    width: "min(360px, 100%)",
+                    aspectRatio: "480 / 880",
+                  }}
+                >
+                  <video
+                    src={active.videoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>{active?.content || ""}</div>
+        )}
       </PixelModal>
     </div>
   );
