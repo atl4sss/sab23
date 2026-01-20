@@ -11,7 +11,6 @@ html, body {
 body {
   background: #000;
   color: #ededed;
-  font-family: Arial, Helvetica, sans-serif;
 
   /* ретро */
   -webkit-font-smoothing: none;
@@ -32,3 +31,64 @@ canvas {
 button {
   -webkit-tap-highlight-color: transparent;
 }
+/* flipbook animation */
+.flip-wrap {
+  perspective: 1200px;
+}
+
+.flip-page {
+  transform-style: preserve-3d;
+}
+
+.flip-page.flip-next {
+  animation: flipNext 360ms ease;
+}
+
+.flip-page.flip-prev {
+  animation: flipPrev 360ms ease;
+}
+
+@keyframes flipNext {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(-90deg); }
+}
+
+@keyframes flipPrev {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(90deg); }
+}
+.letter-paper {
+  background: linear-gradient(180deg, rgba(229,212,186,0.14), rgba(211,191,167,0.08));
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.25) inset,
+    0 12px 30px rgba(0,0,0,0.35);
+  border-radius: 10px;
+  padding: 18px 18px 16px;
+}
+
+.handwriting {
+  font-family: var(--font-hand), cursive;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.65;
+  letter-spacing: 0.15px;
+  color: rgba(255,255,255,0.92);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+}
+
+/* чуть менее "ровно" по компу */
+.letter-paper .handwriting {
+  transform: rotate(-0.15deg);
+}
+
+.type-caret {
+  display: inline-block;
+  width: 0.8ch;
+  animation: caretBlink 1s steps(1) infinite;
+  opacity: 0.9;
+}
+
+@keyframes caretBlink { 50% { opacity: 0; } }
+
+body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }

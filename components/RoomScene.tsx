@@ -13,6 +13,8 @@ type Hotspot = {
   content: string;
   z?: number;
   videoUrl?: string; // <-- add
+  album?: { src: string; caption: string }[];
+  letter?: string;
 };
 
 function clamp(n: number, a: number, b: number) {
@@ -21,6 +23,66 @@ function clamp(n: number, a: number, b: number) {
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
+}
+function Typewriter({
+  text,
+  base = 80, // больше = медленнее
+}: {
+  text: string;
+  base?: number;
+}) {
+  const [i, setI] = useState(0);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // стопаем прошлый таймер на 100%
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    setI(0);
+    let cancelled = false;
+
+    const step = (nextI: number) => {
+      if (cancelled) return;
+      if (nextI > text.length) return;
+
+      setI(nextI);
+
+      if (nextI === text.length) return;
+
+      const ch = text[nextI - 1] || "";
+      let extra = Math.floor(Math.random() * 45);
+
+      if (ch === "." || ch === "!" || ch === "?") extra += 200;
+      if (ch === "," || ch === ";" || ch === ":") extra += 150;
+      if (ch === "\n") extra += 200;
+
+      timerRef.current = window.setTimeout(() => step(nextI + 1), base + extra);
+    };
+
+    // стартовая пауза, чтобы выглядело живее
+    timerRef.current = window.setTimeout(() => step(1), base + 300);
+
+    return () => {
+      cancelled = true;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [text, base]);
+
+  const shown = text.slice(0, i);
+  const done = i >= text.length;
+
+  return (
+    <div className="handwriting whitespace-pre-wrap">
+      {shown}
+      {!done && <span className="type-caret">|</span>}
+    </div>
+  );
 }
 
 export default function RoomScene() {
@@ -35,7 +97,16 @@ export default function RoomScene() {
   const [modalId, setModalId] = useState<string | null>(null);
 
   const [showVideo, setShowVideo] = useState(false);
-  useEffect(() => setShowVideo(false), [modalId]);
+  const [albumIndex, setAlbumIndex] = useState(0);
+  const [flipDir, setFlipDir] = useState<"next" | "prev" | null>(null);
+
+  useEffect(() => {
+    setAlbumIndex(0);
+    setFlipDir(null);
+    setShowVideo(false);
+  }, [modalId]);
+
+
   // для редактора
   const [selectedId, setSelectedId] = useState<string>("cake");
   const [dragging, setDragging] = useState(false);
@@ -127,7 +198,17 @@ export default function RoomScene() {
         y: 74.5,
         w: 9.5,
         h: 9.0,
-        content: "We can turn this into a mini gallery: 5–10 photos + small captions. Tell me which ones 🤍",
+        content: "The best and most favorite photos I’ve ever seen of you🥹🥹 ",
+         album: [
+          { src: "/album/1.jpeg", caption: "caption 1" },
+          { src: "/album/2.jpeg", caption: "caption 2" },
+          { src: "/album/3.jpeg", caption: "caption 3" },
+          { src: "/album/4.jpeg", caption: "caption 3" },
+          { src: "/album/5.jpeg", caption: "caption 3" },
+          { src: "/album/6.jpeg", caption: "caption 3" },
+          { src: "/album/7.jpeg", caption: "caption 3" },
+          { src: "/album/8.jpeg", caption: "caption 3" },
+         ]
       },
       {
         id: "shkaf",
@@ -136,7 +217,16 @@ export default function RoomScene() {
         y: 33.7,
         w: 8.7,
         h: 46.3,
-        content: "There’s a hidden note on the shelf. (later we can add a longer letter with scroll)",
+        content: "A little letter for you.",
+        letter: `Sab,
+
+      I don’t know how to write this without sounding dramatic, so I’ll just say it normally.
+      You’re one of the best people I’ve ever met, and you make everything feel lighter.
+
+      I’m proud of you. I’m grateful for you.
+      And I’m really happy you exist.
+
+      Happy birthday 🤍`,
       },
     ],
     []
@@ -278,7 +368,7 @@ export default function RoomScene() {
     >
       {/* фон */}
       <img
-        src="/scene/room.png"
+        src="/scene/room1920.png"
         alt="room"
         draggable={false}
         className="absolute"
@@ -350,13 +440,13 @@ export default function RoomScene() {
 
       {/* HUD */}
       <div className="absolute left-4 bottom-4 z-[80] flex items-center gap-3">
-        <div className="bg-black/55 text-white px-4 py-2 border border-white/15 text-sm">
+        <div className="bg-black/55 text-white px-4 py-2 border border-white/15 text-base font-semibold">
           Sabina • 20 🎉
         </div>
       </div>
 
       <div className="absolute right-4 bottom-4 z-[80] flex items-center gap-3">
-        <div className="bg-black/55 text-white px-4 py-2 border border-white/15 text-sm">
+        <div className="bg-black/55 text-white px-4 py-2 border border-white/15 text-base font-semibold">
           click objects
         </div>
       </div>
@@ -382,7 +472,7 @@ export default function RoomScene() {
 
             {!showVideo ? (
               <button
-                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-sm"
+                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
                 onClick={() => setShowVideo(true)}
               >
                 open the surprise ▶
@@ -391,21 +481,72 @@ export default function RoomScene() {
               <div className="w-full flex justify-center">
                 <div
                   className="border border-white/15 overflow-hidden"
-                  style={{
-                    width: "min(360px, 100%)",
-                    aspectRatio: "480 / 880",
-                  }}
+                  style={{ width: "min(360px, 100%)", aspectRatio: "480 / 880" }}
                 >
-                  <video
-                    src={active.videoUrl}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="w-full h-full"
-                  />
+                  <video src={active.videoUrl} controls autoPlay playsInline className="w-full h-full" />
                 </div>
               </div>
             )}
+          </div>
+        ) : active?.id === "album" && active?.album?.length ? (
+          <div className="space-y-3 pb-2">
+            <div>{active.content}</div>
+
+            <div className="flip-wrap w-full flex justify-center">
+              <div className="w-full max-w-[360px]">
+                <div
+                  className={`flip-page border border-white/15 overflow-hidden bg-black/20 ${
+                    flipDir ? (flipDir === "next" ? "flip-next" : "flip-prev") : ""
+                  }`}
+                  onAnimationEnd={() => setFlipDir(null)}
+                >
+                  <img
+                    src={active.album[albumIndex].src}
+                    alt={`album ${albumIndex + 1}`}
+                    className="w-full h-auto block"
+                    draggable={false}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <button
+                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+                onClick={() => {
+                  setFlipDir("prev");
+                  setTimeout(() => {
+                    setAlbumIndex((i) => (i - 1 + active.album!.length) % active.album!.length);
+                  }, 180);
+                }}
+              >
+                ←
+              </button>
+
+              <div className="text-xs opacity-70">
+                {albumIndex + 1}/{active.album.length}
+              </div>
+
+              <button
+                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+                onClick={() => {
+                  setFlipDir("next");
+                  setTimeout(() => {
+                    setAlbumIndex((i) => (i + 1) % active.album!.length);
+                  }, 180);
+                }}
+              >
+                →
+              </button>
+            </div>
+          </div>
+        ) : active?.id === "shkaf" && active?.letter ? (
+          <div className="space-y-3">
+            <div className="text-sm opacity-80">{active.content}</div>
+
+            <div className="border border-white/15 bg-white/5 p-4">
+              <Typewriter key={active.id} text={active.letter} base={35} />
+            </div>
           </div>
         ) : (
           <div>{active?.content || ""}</div>

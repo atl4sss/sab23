@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import RoomScene from "../components/RoomScene";
+import IntroOverlay from "../components/IntroOverlay";
 
 function isProbablyMobile() {
   if (typeof window === "undefined") return false;
@@ -23,6 +24,12 @@ function isProbablyMobile() {
 
 export default function Page() {
   const [mobile, setMobile] = useState(false);
+  const [ready, setReady] = useState(false);
+  const enableSound = () => {
+    const a = new Audio();
+    a.muted = true;
+    a.play().catch(() => {});
+  };
 
   useEffect(() => {
     const update = () => setMobile(isProbablyMobile());
@@ -35,7 +42,7 @@ export default function Page() {
     return (
       <main className="min-h-screen w-full bg-black pixel text-white flex items-center justify-center p-6">
         <div className="max-w-[520px] text-center space-y-4">
-          <div className="text-2xl">Саб, это лучше смотреть с ноутбука 💻</div>
+          <div className="text-2xl">Это будет лучше смотреть с ноутбука 💻</div>
           <div className="opacity-80">
             Тут интерактивная комната и на телефоне всё будет криво.
           </div>
@@ -55,10 +62,11 @@ export default function Page() {
       </main>
     );
   }
-
+  
   return (
     <main className="w-screen h-screen bg-black pixel">
-      <RoomScene />
+      <IntroOverlay open={!ready} onEnter={() => setReady(true)} onEnableSound={enableSound} />
+      {ready && <RoomScene />}
     </main>
   );
 }

@@ -28,16 +28,17 @@ export default function PixelModal({
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 pixel">
       <button
-        className="absolute inset-0 bg-black/70"
+        className="absolute inset-0 bg-black/35"
         onClick={onClose}
         aria-label="close overlay"
       />
 
       <div
-        className="relative w-full max-w-[720px] bg-[#0b1220] text-white p-4 border border-white/15"
+        className="relative w-full max-w-[720px] bg-transparent text-white/90 p-4 border border-white/15"
         style={{
+          background: "linear-gradient(180deg, #6B4D3B 0%, #3E2C23 100%)",
           boxShadow:
-            "0 0 0 2px rgba(255,255,255,0.12) inset, 0 16px 0 rgba(0,0,0,0.35)",
+            "0 0 0 2px rgba(255,255,255,0.10) inset, 0 18px 40px rgba(0,0,0,0.35)",
         }}
       >
         <div className="flex items-center justify-between gap-3 mb-3">
