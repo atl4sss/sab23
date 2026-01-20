@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Саб • 20",
+  title: "Sabina • 20 🎉",
   description: "Pixel birthday room",
 };
 
