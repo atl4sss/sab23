@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import PixelModal from "./PixelModal";
+import RecordPlayer from "./RecordPlayer";
 
 type Hotspot = {
   id: string;
@@ -15,6 +16,8 @@ type Hotspot = {
   videoUrl?: string; // <-- add
   album?: { src: string; caption: string }[];
   letter?: string;
+  audioUrl?: string;
+  trackTitle?: string;
 };
 
 function clamp(n: number, a: number, b: number) {
@@ -84,7 +87,57 @@ function Typewriter({
     </div>
   );
 }
+function ConfettiBurst({ trigger }: { trigger: number }) {
+  const pieces = useMemo(() => {
+    const colors = ["#F2D7B6", "#E9B7A5", "#D9C7A6", "#BFA07A", "#F1E3CF", "#E7A9C2"];
 
+    return Array.from({ length: 70 }).map((_, i) => {
+      // 3 источника: левый угол / центр / правый угол
+      const r = Math.random();
+      let baseLeft = 50;
+
+      if (r < 0.33) baseLeft = 8;
+      else if (r < 0.66) baseLeft = 50;
+      else baseLeft = 92;
+
+      return {
+        id: `${trigger}-${i}`,
+        left: baseLeft + (Math.random() * 6 - 3), // разброс вокруг источника
+        delay: Math.random() * 0.9,
+        dur: 2.4 + Math.random() * 1.2,
+        sizeW: 6 + Math.random() * 6,
+        sizeH: 10 + Math.random() * 10,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * 360,
+        drift: Math.random() * 320 - 160, // <-- НЕ по прямой: -160..+160px
+      };
+    });
+  }, [trigger]);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[3000]">
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            ["--drift" as any]: `${p.drift}px`,
+            position: "absolute",
+            left: `${p.left}%`,
+            top: "0%",
+            width: `${p.sizeW}px`,
+            height: `${p.sizeH}px`,
+            background: p.color,
+            opacity: 0,
+            transform: `rotate(${p.rot}deg)`,
+            animation: `confettiFall ${p.dur}s ease-out ${p.delay}s forwards`,
+            borderRadius: "2px",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.10) inset",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 export default function RoomScene() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -93,12 +146,35 @@ export default function RoomScene() {
 
   const [debug, setDebug] = useState(false);
   const [edit, setEdit] = useState(false);
+  const [seen, setSeen] = useState<Record<string, boolean>>({});
+  const [finalOpen, setFinalOpen] = useState(false);
+  const [finalShown, setFinalShown] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
 
   const [modalId, setModalId] = useState<string | null>(null);
 
   const [showVideo, setShowVideo] = useState(false);
   const [albumIndex, setAlbumIndex] = useState(0);
   const [flipDir, setFlipDir] = useState<"next" | "prev" | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.25);
+
+  const [curTime, setCurTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const fmt = (s: number) => {
+    if (!isFinite(s) || s <= 0) return "0:00";
+    const m = Math.floor(s / 60);
+    const r = Math.floor(s % 60);
+    return `${m}:${String(r).padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
 
   useEffect(() => {
     setAlbumIndex(0);
@@ -143,6 +219,8 @@ export default function RoomScene() {
         w: 16,
         h: 12,
         content: "We’ll put your song here. (later: mp3 / Spotify link)",
+        audioUrl: "/audio/boombox.mp3",
+        trackTitle: "Sab’s song",
       },
       {
         id: "poster_kniga",
@@ -231,6 +309,23 @@ export default function RoomScene() {
     ],
     []
   );
+  const requiredIds = useMemo(
+  () =>
+    hotspots
+      .map((h) => h.id)
+      // если хочешь исключить что-то:
+      // .filter((id) => id !== "window")
+      ,
+  [hotspots]
+);
+
+const seenCount = useMemo(
+  () => requiredIds.filter((id) => seen[id]).length,
+  [requiredIds, seen]
+);
+const totalCount = requiredIds.length;
+const allSeen = totalCount > 0 && seenCount === totalCount;
+
 
 
   const active = hotspots.find((h) => h.id === modalId) || null;
@@ -326,7 +421,22 @@ export default function RoomScene() {
 
     return { left: x1, top: y1, width: x2 - x1, height: y2 - y1 };
   }, [dragStart, dragEnd]);
+  const closeModal = () => {
+      // stop boombox when closing any modal
+  if (audioRef.current) {
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+  }
+  setIsPlaying(false);
+  setModalId(null);
 
+  // ✅ финал после закрытия последней модалки (и только один раз)
+  if (!finalShown && allSeen) {
+    setFinalShown(true);
+    setConfettiKey((k) => k + 1); // триггер конфетти
+    setTimeout(() => setFinalOpen(true), 450);
+  }
+};
   return (
     <div
       ref={wrapRef}
@@ -368,7 +478,7 @@ export default function RoomScene() {
     >
       {/* фон */}
       <img
-        src="/scene/room1920.png"
+        src="/scene/room.png"
         alt="room"
         draggable={false}
         className="absolute"
@@ -412,6 +522,7 @@ export default function RoomScene() {
 
         const selected = h.id === selectedId;
 
+
         return (
           <button
             key={h.id}
@@ -425,13 +536,15 @@ export default function RoomScene() {
               background: debug ? (selected ? "rgba(0,255,255,0.18)" : "rgba(255,0,0,0.18)") : "transparent",
               border: debug ? (selected ? "2px solid rgba(0,255,255,0.9)" : "1px solid rgba(255,255,255,0.6)") : "none",
             }}
-            onClick={() => {
-              if (edit) {
-                setSelectedId(h.id);
-                return;
-              }
-              setModalId(h.id);
-            }}
+        onClick={() => {
+          if (edit) {
+            setSelectedId(h.id);
+            return;
+          }
+
+          setSeen((prev) => ({ ...prev, [h.id]: true }));
+          setModalId(h.id);
+        }}
             aria-label={h.title}
             title={debug ? `${h.id} (${h.x} ${h.y} ${h.w} ${h.h})` : h.title}
           />
@@ -452,106 +565,137 @@ export default function RoomScene() {
       </div>
 
       {/* подсказки */}
-      <div className="absolute left-4 top-4 z-[90] space-y-2">
+      {/* top-left: progress only */}
+      <div className="absolute left-4 top-4 z-[90]">
         <div className="bg-black/40 text-white px-3 py-2 border border-white/10 text-xs">
-          G = debug • E = edit hitboxes
+          {seenCount}/{totalCount} found
         </div>
-        {edit && (
-          <div className="bg-black/55 text-white px-3 py-2 border border-white/10 text-xs">
-            edit on • selected: <b>{selectedId}</b> • drag to copy x/y/w/h
-            <br />
-            [ ] switch • R rename • Esc cancel
+
+        {/* optional: маленький индикатор что включено, без подсказок клавиш */}
+        {(debug || edit) && (
+          <div className="mt-2 bg-black/35 text-white/80 px-3 py-2 border border-white/10 text-[11px]">
+            {debug && <div>debug on</div>}
+            {edit && <div>edit on</div>}
           </div>
         )}
       </div>
 
-      <PixelModal open={!!active} title={active?.title || ""} onClose={() => setModalId(null)}>
-        {active?.id === "presents" && active?.videoUrl ? (
-          <div className="space-y-3">
-            <div>{active.content}</div>
+      <PixelModal open={!!active} title={active?.title || ""} onClose={closeModal}>
+  {active?.id === "presents" && active?.videoUrl ? (
+    <div className="space-y-3">
+      <div>{active.content}</div>
 
-            {!showVideo ? (
-              <button
-                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-                onClick={() => setShowVideo(true)}
-              >
-                open the surprise ▶
-              </button>
-            ) : (
-              <div className="w-full flex justify-center">
-                <div
-                  className="border border-white/15 overflow-hidden"
-                  style={{ width: "min(360px, 100%)", aspectRatio: "480 / 880" }}
-                >
-                  <video src={active.videoUrl} controls autoPlay playsInline className="w-full h-full" />
-                </div>
-              </div>
-            )}
+      {!showVideo ? (
+        <button
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+          onClick={() => setShowVideo(true)}
+        >
+          open the surprise ▶
+        </button>
+      ) : (
+        <div className="w-full flex justify-center">
+          <div
+            className="border border-white/15 overflow-hidden"
+            style={{ width: "min(360px, 100%)", aspectRatio: "480 / 880" }}
+          >
+            <video src={active.videoUrl} controls autoPlay playsInline className="w-full h-full" />
           </div>
-        ) : active?.id === "album" && active?.album?.length ? (
-          <div className="space-y-3 pb-2">
-            <div>{active.content}</div>
+        </div>
+      )}
+    </div>
+) : active?.id === "boombox" && active?.audioUrl ? (
+  <div className="space-y-3">
+    <div className="text-sm opacity-80">{active.content}</div>
+    <RecordPlayer src={active.audioUrl} title={active.trackTitle ?? "Sab’s song"} initialVolume={0.25} />
+  </div>
 
-            <div className="flip-wrap w-full flex justify-center">
-              <div className="w-full max-w-[360px]">
-                <div
-                  className={`flip-page border border-white/15 overflow-hidden bg-black/20 ${
-                    flipDir ? (flipDir === "next" ? "flip-next" : "flip-prev") : ""
-                  }`}
-                  onAnimationEnd={() => setFlipDir(null)}
-                >
-                  <img
-                    src={active.album[albumIndex].src}
-                    alt={`album ${albumIndex + 1}`}
-                    className="w-full h-auto block"
-                    draggable={false}
-                  />
-                </div>
-              </div>
-            </div>
+  ) : active?.id === "album" && active?.album?.length ? (
+    <div className="space-y-3 pb-2">
+      <div>{active.content}</div>
 
-            <div className="flex items-center justify-between gap-2">
-              <button
-                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-                onClick={() => {
-                  setFlipDir("prev");
-                  setTimeout(() => {
-                    setAlbumIndex((i) => (i - 1 + active.album!.length) % active.album!.length);
-                  }, 180);
-                }}
-              >
-                ←
-              </button>
-
-              <div className="text-xs opacity-70">
-                {albumIndex + 1}/{active.album.length}
-              </div>
-
-              <button
-                className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-                onClick={() => {
-                  setFlipDir("next");
-                  setTimeout(() => {
-                    setAlbumIndex((i) => (i + 1) % active.album!.length);
-                  }, 180);
-                }}
-              >
-                →
-              </button>
-            </div>
+      <div className="flip-wrap w-full flex justify-center">
+        <div className="w-full max-w-[360px]">
+          <div
+            className={`flip-page border border-white/15 overflow-hidden bg-black/20 ${
+              flipDir ? (flipDir === "next" ? "flip-next" : "flip-prev") : ""
+            }`}
+            onAnimationEnd={() => setFlipDir(null)}
+          >
+            <img
+              src={active.album[albumIndex].src}
+              alt={`album ${albumIndex + 1}`}
+              className="w-full h-auto block"
+              draggable={false}
+            />
           </div>
-        ) : active?.id === "shkaf" && active?.letter ? (
-          <div className="space-y-3">
-            <div className="text-sm opacity-80">{active.content}</div>
+        </div>
+      </div>
 
-            <div className="border border-white/15 bg-white/5 p-4">
-              <Typewriter key={active.id} text={active.letter} base={35} />
-            </div>
-          </div>
-        ) : (
-          <div>{active?.content || ""}</div>
-        )}
-      </PixelModal>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+          onClick={() => {
+            setFlipDir("prev");
+            setTimeout(() => {
+              setAlbumIndex((i) => (i - 1 + active.album!.length) % active.album!.length);
+            }, 180);
+          }}
+        >
+          ←
+        </button>
+
+        <div className="text-xs opacity-70">
+          {albumIndex + 1}/{active.album.length}
+        </div>
+
+        <button
+          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+          onClick={() => {
+            setFlipDir("next");
+            setTimeout(() => {
+              setAlbumIndex((i) => (i + 1) % active.album!.length);
+            }, 180);
+          }}
+        >
+          →
+        </button>
+      </div>
+    </div>
+  ) : active?.id === "shkaf" && active?.letter ? (
+    <div className="space-y-3">
+      <div className="text-sm opacity-80">{active.content}</div>
+
+      <div className="border border-white/15 bg-white/5 p-4">
+        <Typewriter key={active.id} text={active.letter} base={35} />
+      </div>
+    </div>
+  ) : (
+    <div>{active?.content || ""}</div>
+  )}
+</PixelModal>
+      {finalOpen && <ConfettiBurst trigger={confettiKey} />}
+
+    <PixelModal open={finalOpen} title={"one last thing ✨"} onClose={() => setFinalOpen(false)} animate={true}>
+      <div className="space-y-3">
+        <div className="text-white/90">
+          okay… you clicked everything, so you unlocked the final message.
+        </div>
+
+        <div className="border border-white/15 bg-white/5 p-4 leading-relaxed">
+          Sab, I’m really happy you exist.
+          <br />
+          I hope this year is soft to you and loud in all the right ways.
+          <br />
+          Happy birthday 🤍
+        </div>
+
+        <div className="text-xs text-white/60">
+          ({seenCount}/{totalCount} objects found)
+        </div>
+      </div>
+    </PixelModal>
+
+
     </div>
   );
 }

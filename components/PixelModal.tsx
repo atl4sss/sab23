@@ -7,11 +7,13 @@ export default function PixelModal({
   title,
   onClose,
   children,
+  animate = false,
 }: {
   open: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  animate?: boolean;
 }) {
   // close on Esc
   useEffect(() => {
@@ -28,13 +30,15 @@ export default function PixelModal({
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-3 pixel">
       <button
-        className="absolute inset-0 bg-black/35"
+        className={`absolute inset-0 bg-black/35 ${animate ? "animate-[fadeIn_320ms_ease-out]" : ""}`}
         onClick={onClose}
         aria-label="close overlay"
       />
 
       <div
-        className="relative w-full max-w-[720px] bg-transparent text-white/90 p-4 border border-white/15"
+        className={`relative w-full max-w-[720px] bg-transparent text-white/90 p-4 border border-white/15 ${
+          animate ? "animate-[popIn_320ms_ease-out]" : ""
+        }`}
         style={{
           background: "linear-gradient(180deg, #6B4D3B 0%, #3E2C23 100%)",
           boxShadow:
