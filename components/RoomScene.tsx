@@ -872,7 +872,7 @@ const allSeen = totalCount > 0 && seenCount === totalCount;
             </div>
           ) : (
             <div className="border border-white/15 bg-white/5 p-3 text-sm">
-              okay… wish accepted 🤍
+              Теперь свои 3 желания загадаешь мне когда захочешь чтобы я их исполнил. Жду что нибудь инетерсное 😜
             </div>
           )}
         </div>
@@ -952,13 +952,13 @@ const allSeen = totalCount > 0 && seenCount === totalCount;
     <PixelModal open={finalOpen} title={"one last thing ✨"} onClose={() => setFinalOpen(false)} animate={true}>
       <div className="space-y-3">
         <div className="text-white/90">
-          okay… you clicked everything, so you unlocked the final message.
+          you clicked everything, so you here is the final message.
         </div>
 
         <div className="border border-white/15 bg-white/5 p-4 leading-relaxed">
-          Sab, I’m really happy you exist.
+          Sab, I’m really happy you exist. If life gets loud or heavy, just remember this:
           <br />
-          I hope this year is soft to you and loud in all the right ways.
+          I’m always on your side, and I’m not going anywhere.
           <br />
           Happy birthday 🤍
         </div>
