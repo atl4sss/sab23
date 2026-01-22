@@ -952,15 +952,15 @@ const allSeen = totalCount > 0 && seenCount === totalCount;
     <PixelModal open={finalOpen} title={"one last thing ✨"} onClose={() => setFinalOpen(false)} animate={true}>
       <div className="space-y-3">
         <div className="text-white/90">
-          you clicked everything, so you here is the final message.
+          Ты всё нашла, поздравляяюю🥳
         </div>
 
         <div className="border border-white/15 bg-white/5 p-4 leading-relaxed">
-          Sab, I’m really happy you exist. If life gets loud or heavy, just remember this:
+          Всё, конец
           <br />
-          I’m always on your side, and I’m not going anywhere.
+          На сегодня с сентиментальностью закончил.
           <br />
-          Happy birthday 🤍
+          С днём рождения 😘
         </div>
 
         <div className="text-xs text-white/60">
