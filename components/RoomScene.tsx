@@ -478,7 +478,7 @@ export default function RoomScene() {
 
       And honestly, I still remember this one small moment: the next day, on the third floor, you were the first to say hi to me while I was sitting on the couch near the classroom. It’s such a tiny thing, and maybe it shouldn’t mean much — but it stuck with me. Moments like that stay in my head, and they just make me appreciate you even more.
 
-      Today, I hope you feel loved in the simple ways: good music, warm messages, small comforts, and a few moments where you forget everything else and just smile. I hope this new year of your life brings you peace, healing, and softer days. You deserve good things, even after everything.
+      Today, I hope you feel loved in the simple ways: good music, warm messages, small comforts, and a few moments where you forget everything else and just smile. I hope this new year of your life brings you peace, healing, and softer days. You deserve everything good in this world!.
 
       Happy 20th, Sab 🤍`,
       },
