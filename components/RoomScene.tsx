@@ -18,6 +18,8 @@ type Hotspot = {
   letter?: string;
   audioUrl?: string;
   trackTitle?: string;
+  tracks?: { title: string; src: string }[];
+
 };
 
 function clamp(n: number, a: number, b: number) {
@@ -30,12 +32,31 @@ function round1(n: number) {
 function Typewriter({
   text,
   base = 80, // больше = медленнее
+  scrollRef, // ✅ контейнер со скроллом (опционально)
 }: {
   text: string;
   base?: number;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const [i, setI] = useState(0);
   const timerRef = useRef<number | null>(null);
+
+  // ✅ авто-скролл только если юзер "внизу"
+  const autoScrollRef = useRef(true);
+
+  // ✅ отслеживаем ручной скролл
+  useEffect(() => {
+    const el = scrollRef?.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 28;
+      autoScrollRef.current = nearBottom;
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll as any);
+  }, [scrollRef]);
 
   useEffect(() => {
     // стопаем прошлый таймер на 100%
@@ -76,6 +97,15 @@ function Typewriter({
       }
     };
   }, [text, base]);
+
+  // ✅ автоскроллим вниз по мере печати, но не мешаем если юзер пролистал вверх
+  useEffect(() => {
+    const el = scrollRef?.current;
+    if (!el) return;
+    if (!autoScrollRef.current) return;
+
+    el.scrollTop = el.scrollHeight;
+  }, [i, scrollRef]);
 
   const shown = text.slice(0, i);
   const done = i >= text.length;
@@ -138,6 +168,114 @@ function ConfettiBurst({ trigger }: { trigger: number }) {
     </div>
   );
 }
+function useBlowToExtinguish(onBlow: () => void, onProgress?: (p: number) => void) {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const cooldownRef = useRef(0);
+  const scoreRef = useRef(0);
+
+  const stop = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+
+    if (ctxRef.current) {
+      ctxRef.current.close().catch(() => {});
+      ctxRef.current = null;
+    }
+
+    scoreRef.current = 0;
+    cooldownRef.current = 0;
+    onProgress?.(0);
+  };
+
+  const start = async () => {
+    stop();
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const src = ctx.createMediaStreamSource(stream);
+
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.7;
+
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 120;
+
+    src.connect(hp);
+    hp.connect(analyser);
+
+    ctxRef.current = ctx;
+    streamRef.current = stream;
+
+    const data = new Uint8Array(analyser.fftSize);
+
+    const THRESH = 0.085;     // ниже = легче (0.07..0.085)
+    const TARGET = 10;        // меньше = легче (8..12)
+    const DECAY = 0.11;       // больше = быстрее падает прогресс
+    const GAIN = 11;          // больше = быстрее растёт прогресс
+
+    const tick = () => {
+      analyser.getByteTimeDomainData(data);
+
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+
+      const now = performance.now();
+
+      if (cooldownRef.current > now) {
+        // во время кулдауна прогресс не растим
+      } else {
+        const over = Math.max(0, rms - THRESH);
+
+        if (over > 0) {
+          // плавный рост
+          scoreRef.current += over * GAIN;
+        } else {
+          // плавный спад
+          scoreRef.current = Math.max(0, scoreRef.current - DECAY);
+        }
+
+        const p = Math.max(0, Math.min(1, scoreRef.current / TARGET));
+        onProgress?.(p);
+
+        if (scoreRef.current >= TARGET) {
+          cooldownRef.current = now + 2000;
+          scoreRef.current = 0;
+          onProgress?.(1);
+          onBlow();
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  };
+
+  useEffect(() => () => stop(), []);
+  return { start, stop };
+}
+
 export default function RoomScene() {
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -150,8 +288,25 @@ export default function RoomScene() {
   const [finalOpen, setFinalOpen] = useState(false);
   const [finalShown, setFinalShown] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
+  const letterScrollRef = useRef<HTMLDivElement | null>(null);
+
 
   const [modalId, setModalId] = useState<string | null>(null);
+
+  const [blowProgress, setBlowProgress] = useState(0); // 0..1
+  const [cakeBlown, setCakeBlown] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+
+  const blow = useBlowToExtinguish(
+    () => {
+      setCakeBlown(true);
+      setMicOn(false);
+      blow.stop();
+    },
+    (p) => setBlowProgress(p)
+  );
+
 
   const [showVideo, setShowVideo] = useState(false);
   const [albumIndex, setAlbumIndex] = useState(0);
@@ -174,6 +329,18 @@ export default function RoomScene() {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  useEffect(() => {
+    if (!modalId) {
+      setCakeBlown(false);
+      setMicOn(false);
+      setMicError(null);
+      setBlowProgress(0);
+      blow.stop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalId]);
+
 
 
   useEffect(() => {
@@ -199,7 +366,7 @@ export default function RoomScene() {
         w: 13.6,
         h: 24.7,
         z: 30,
-        content: "I already owe you two wishes.\nNow add a third one. You have 3 months. Choose wisely 😌",
+        content: "I already owed you two wishes… and now you have to think of a third😭",
       },
       {
         id: "presents",
@@ -218,9 +385,12 @@ export default function RoomScene() {
         y: 80,
         w: 16,
         h: 12,
-        content: "We’ll put your song here. (later: mp3 / Spotify link)",
-        audioUrl: "/audio/boombox.mp3",
-        trackTitle: "Sab’s song",
+        content: "click play :)",
+        tracks: [
+          { title: "✨Frank Sinatra — The Way You Look Tonight", src: "/audio/sab.mp3" },
+          { title: "🌙 M’Dee — Потеряться", src: "/audio/track2.mp3" },
+          { title: "🫶🏽 Mac Miller — Surf", src: "/audio/track3.mp3" },
+        ],
       },
       {
         id: "poster_kniga",
@@ -229,7 +399,7 @@ export default function RoomScene() {
         y: 18,
         w: 16,
         h: 22,
-        content: "Your favorite book vibe ✨",
+        content: "Tvoya knizhka po psikhologii kotoruyu ty tak lyubish'😜",
       },
       {
         id: "vaseflowers",
@@ -238,7 +408,7 @@ export default function RoomScene() {
         y: 47.4,
         w: 17.2,
         h: 30,
-        content: "A tiny bouquet. Like “I’m here” even when I’m not 🌹",
+        content: "A tiny bouquet, just to say: I’m here. Even if I’m not “here” here😔",
       },
       {
         id: "window",
@@ -247,7 +417,7 @@ export default function RoomScene() {
         y: 1.3,
         w: 35.4,
         h: 51.4,
-        content: "See that Range Rover? Yeah… it’s a sign 😌",
+        content: "Tvoi Renzhik na 23 den' rozhdeniya😛😛😛(bez vozduha)",
       },
       {
         id: "poster_drink",
@@ -256,7 +426,7 @@ export default function RoomScene() {
         y: 16.5,
         w: 13.4,
         h: 22.6,
-        content: "A matcha poster. (we can add a tiny story / meme / message here)",
+        content: "Every day I hope life feels a little softer for you.\nAnd that your matcha always hits perfect🫶🏼",
         z: 20,
       },
       {
@@ -266,7 +436,7 @@ export default function RoomScene() {
         y: 34.2,
         w: 12.6,
         h: 22.4,
-        content: "A little plane poster. (we can add something about trips / dreams here)",
+        content: "Moe pervoye obeshanie kotoroe ya dal tebe! Cherez let 5 ya kuplyu nam s toboy chastnyy jet. I my polyetim kuda ugodno, kogda ugodno. Ya obeshayu. (chut' chut' s vozduhom)",
         z: 20,
       },
       {
@@ -298,14 +468,21 @@ export default function RoomScene() {
         content: "A little letter for you.",
         letter: `Sab,
 
-      I don’t know how to write this without sounding dramatic, so I’ll just say it normally.
-      You’re one of the best people I’ve ever met, and you make everything feel lighter.
+      Happy birthday.
 
-      I’m proud of you. I’m grateful for you.
-      And I’m really happy you exist.
+      I just want you to know how much I appreciate you. Even in quiet moments and unspoken days, you mattered more than you realize.
 
-      Happy birthday 🤍`,
+      I still can’t believe the girl I used to ask Meruert Apay about during breaks is now the one I’m writing a birthday message to a year later. It’s honestly wild — in a good way.
+
+      This year was heavy, and somehow, knowing you were there made it a little easier to carry things. Thank you for the kindness, the patience, and the presence you gave — whether you knew it or not.
+
+      And honestly, I still remember this one small moment: the next day, on the third floor, you were the first to say hi to me while I was sitting on the couch near the classroom. It’s such a tiny thing, and maybe it shouldn’t mean much — but it stuck with me. Moments like that stay in my head, and they just make me appreciate you even more.
+
+      Today, I hope you feel loved in the simple ways: good music, warm messages, small comforts, and a few moments where you forget everything else and just smile. I hope this new year of your life brings you peace, healing, and softer days. You deserve good things, even after everything.
+
+      Happy 20th, Sab 🤍`,
       },
+
     ],
     []
   );
@@ -580,99 +757,196 @@ const allSeen = totalCount > 0 && seenCount === totalCount;
         )}
       </div>
 
-      <PixelModal open={!!active} title={active?.title || ""} onClose={closeModal}>
-  {active?.id === "presents" && active?.videoUrl ? (
-    <div className="space-y-3">
-      <div>{active.content}</div>
+    <PixelModal open={!!active} title={active?.title || ""} onClose={closeModal}>
+      {active?.id === "presents" && active?.videoUrl ? (
+        <div className="space-y-3">
+          <div>{active.content}</div>
 
-      {!showVideo ? (
-        <button
-          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-          onClick={() => setShowVideo(true)}
-        >
-          open the surprise ▶
-        </button>
+          {!showVideo ? (
+            <button
+              className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+              onClick={() => setShowVideo(true)}
+            >
+              open the surprise ▶
+            </button>
+          ) : (
+            <div className="w-full flex justify-center">
+              <div
+                className="border border-white/15 overflow-hidden"
+                style={{ width: "min(360px, 100%)", aspectRatio: "480 / 880" }}
+              >
+                <video
+                  src={active.videoUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ) : active?.id === "cake" ? (
+        <div className="space-y-4">
+          <div className="text-sm opacity-80">{active.content}</div>
+
+          {/* cake stage (чтобы не залезало на текст и было ровно по центру) */}
+          <div className="cake-stage">
+          <div
+            className={`cake ${cakeBlown ? "is-blown" : ""}`}
+            style={{ ["--blow" as any]: blowProgress }}
+          >
+          {micOn && !cakeBlown && (
+            <div className="blowbar">
+              <div className="blowbar-top">
+                <span>blow</span>
+                <span>{Math.round(blowProgress * 100)}%</span>
+              </div>
+              <div className="blowbar-track" aria-label="blow progress">
+                <div className="blowbar-fill" style={{ width: `${blowProgress * 100}%` }} />
+              </div>
+            </div>
+          )}
+              <div className="candles candles-20">
+                <div className="candleNum num2">
+                  2
+                  <div className="wick" />
+                  <div className="flame" />
+                  <div className="smoke" />
+                </div>
+
+                <div className="candleNum num0">
+                  0
+                  <div className="wick" />
+                  <div className="flame" />
+                  <div className="smoke" />
+                </div>
+              </div>
+
+              <div className="cake-top" />
+              <div className="cake-mid" />
+              <div className="cake-bot" />
+              <div className="cake-shadow" />
+            </div>
+          </div>
+
+          {!cakeBlown ? (
+            <div className="space-y-2">
+              {!micOn ? (
+                <button
+                  className="w-full px-3 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+                  onClick={async () => {
+                    setMicError(null);
+                    try {
+                      await blow.start();
+                      setMicOn(true);
+                    } catch {
+                      setMicError("mic permission blocked (or not supported)");
+                      setMicOn(false);
+                    }
+                  }}
+                >
+                  enable mic and blow 🎤💨
+                </button>
+              ) : (
+                <button
+                  className="w-full px-3 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+                  onClick={() => {
+                    blow.stop();
+                    setMicOn(false);
+                  }}
+                >
+                  listening… blow now 💨 (tap to stop)
+                </button>
+              )}
+
+              {micError && (
+                <div className="text-xs opacity-70 border border-white/15 bg-white/5 p-2">
+                  {micError}
+                </div>
+              )}
+
+              <div className="text-xs text-white/60">
+                tip: blow close to the mic for ~1 second
+              </div>
+            </div>
+          ) : (
+            <div className="border border-white/15 bg-white/5 p-3 text-sm">
+              okay… wish accepted 🤍
+            </div>
+          )}
+        </div>
+      ) : active?.id === "boombox" && active?.tracks?.length ? (
+        <div className="space-y-3">
+          <div className="text-sm opacity-80">{active.content}</div>
+          <RecordPlayer tracks={active.tracks} initialVolume={0.25} />
+        </div>
+      ) : active?.id === "album" && active?.album?.length ? (
+        <div className="space-y-3 pb-2">
+          <div>{active.content}</div>
+
+          <div className="flip-wrap w-full flex justify-center">
+            <div className="w-full max-w-[360px]">
+              <div
+                className={`flip-page border border-white/15 overflow-hidden bg-black/20 ${
+                  flipDir ? (flipDir === "next" ? "flip-next" : "flip-prev") : ""
+                }`}
+                onAnimationEnd={() => setFlipDir(null)}
+              >
+                <img
+                  src={active.album[albumIndex].src}
+                  alt={`album ${albumIndex + 1}`}
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <button
+              className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+              onClick={() => {
+                setFlipDir("prev");
+                setTimeout(() => {
+                  setAlbumIndex((i) => (i - 1 + active.album!.length) % active.album!.length);
+                }, 180);
+              }}
+            >
+              ←
+            </button>
+
+            <div className="text-xs opacity-70">
+              {albumIndex + 1}/{active.album.length}
+            </div>
+
+            <button
+              className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
+              onClick={() => {
+                setFlipDir("next");
+                setTimeout(() => {
+                  setAlbumIndex((i) => (i + 1) % active.album!.length);
+                }, 180);
+              }}
+            >
+              →
+            </button>
+          </div>
+        </div>
+      ) : active?.id === "shkaf" && active?.letter ? (
+        <div className="space-y-3">
+          <div className="text-sm opacity-80">{active.content}</div>
+          <div
+            ref={letterScrollRef}
+            className="border border-white/15 bg-white/5 p-4 max-h-[55vh] overflow-y-auto pr-3"
+          >
+            <Typewriter key={active.id} text={active.letter} base={35} scrollRef={letterScrollRef} />
+          </div>
+        </div>
       ) : (
-        <div className="w-full flex justify-center">
-          <div
-            className="border border-white/15 overflow-hidden"
-            style={{ width: "min(360px, 100%)", aspectRatio: "480 / 880" }}
-          >
-            <video src={active.videoUrl} controls autoPlay playsInline className="w-full h-full" />
-          </div>
-        </div>
+        <div>{active?.content || ""}</div>
       )}
-    </div>
-) : active?.id === "boombox" && active?.audioUrl ? (
-  <div className="space-y-3">
-    <div className="text-sm opacity-80">{active.content}</div>
-    <RecordPlayer src={active.audioUrl} title={active.trackTitle ?? "Sab’s song"} initialVolume={0.25} />
-  </div>
-
-  ) : active?.id === "album" && active?.album?.length ? (
-    <div className="space-y-3 pb-2">
-      <div>{active.content}</div>
-
-      <div className="flip-wrap w-full flex justify-center">
-        <div className="w-full max-w-[360px]">
-          <div
-            className={`flip-page border border-white/15 overflow-hidden bg-black/20 ${
-              flipDir ? (flipDir === "next" ? "flip-next" : "flip-prev") : ""
-            }`}
-            onAnimationEnd={() => setFlipDir(null)}
-          >
-            <img
-              src={active.album[albumIndex].src}
-              alt={`album ${albumIndex + 1}`}
-              className="w-full h-auto block"
-              draggable={false}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <button
-          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-          onClick={() => {
-            setFlipDir("prev");
-            setTimeout(() => {
-              setAlbumIndex((i) => (i - 1 + active.album!.length) % active.album!.length);
-            }, 180);
-          }}
-        >
-          ←
-        </button>
-
-        <div className="text-xs opacity-70">
-          {albumIndex + 1}/{active.album.length}
-        </div>
-
-        <button
-          className="px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-base font-semibold"
-          onClick={() => {
-            setFlipDir("next");
-            setTimeout(() => {
-              setAlbumIndex((i) => (i + 1) % active.album!.length);
-            }, 180);
-          }}
-        >
-          →
-        </button>
-      </div>
-    </div>
-  ) : active?.id === "shkaf" && active?.letter ? (
-    <div className="space-y-3">
-      <div className="text-sm opacity-80">{active.content}</div>
-
-      <div className="border border-white/15 bg-white/5 p-4">
-        <Typewriter key={active.id} text={active.letter} base={35} />
-      </div>
-    </div>
-  ) : (
-    <div>{active?.content || ""}</div>
-  )}
-</PixelModal>
+    </PixelModal>
       {finalOpen && <ConfettiBurst trigger={confettiKey} />}
 
     <PixelModal open={finalOpen} title={"one last thing ✨"} onClose={() => setFinalOpen(false)} animate={true}>

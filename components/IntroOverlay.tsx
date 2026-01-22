@@ -41,11 +41,11 @@ export default function IntroOverlay({
           <div className="text-3xl font-semibold tracking-tight">before you enter</div>
 
           <div className="mt-2 text-white/90 leading-relaxed text-[15px]">
-            i made a tiny room for you.
+            I made you this little room as a tiny birthday thing - it’s basically a mini game, but it’s all about you
             <br />
             click objects. open surprises. take your time.
             <br />
-            (and yeah… sound on 😌)
+            (and sound on is recommended 🎵)
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">

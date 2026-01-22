@@ -104,11 +104,19 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
 }
 
 /* ===== record player tidy (matched to your JSX) ===== */
-.rp{ width:100%; display:grid; gap:14px; user-select:none; }
+/* ===== record player tidy (clean, no duplicates) ===== */
+
+.rp{
+  width:100%;
+  display:grid;
+  gap:14px;
+  user-select:none;
+  justify-items:center;
+}
 
 /* deck */
 .rp-deck{
-  width: min(360px, 100%);
+  width: min(340px, 100%);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   position: relative;
@@ -172,6 +180,7 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
     rgba(0,0,0,.85) 55%,
     rgba(0,0,0,.95)
   );
+  will-change: transform;
 }
 
 .rp-grooves{
@@ -225,7 +234,7 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
   opacity:.28;
 }
 
-/* spin */
+/* spin ONLY when playing */
 .rp-deck.is-playing .rp-vinyl{ animation: rpSpin 2.2s linear infinite; }
 @keyframes rpSpin{ from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
 
@@ -267,96 +276,6 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
   box-shadow: 0 4px 10px rgba(0,0,0,.25);
 }
 
-/* ===== smaller + tidier bottom controls ===== */
-
-.rp-bottom{
-  width: min(520px, 100%);        /* чуть уже */
-  grid-template-columns: 1fr 92px; /* vol уже */
-  gap: 10px;
-}
-
-.rp-meta{
-  padding: 10px;
-  border-radius: 10px;
-}
-
-.rp-title{
-  font-size: 14px;   /* было 16 */
-  font-weight: 700;
-}
-
-.rp-time{
-  margin-top: 6px;
-  font-size: 12px;   /* было 13 */
-}
-
-.rp-progress{
-  margin-top: 8px;
-  height: 8px;       /* тоньше */
-  border-radius: 6px;
-}
-
-.rp-vol{
-  padding: 8px;
-  gap: 6px;
-  border-radius: 10px;
-}
-
-.rp-vol-label{
-  font-size: 12px;
-}
-
-.rp-vol-track{
-  height: 92px;      /* было 110 */
-  width: 22px;       /* уже */
-}
-
-.rp-vol-ticks{
-  inset: 8px 0 8px 0;
-  width: 2px;
-  opacity: .22;
-}
-
-.rp-vol-range{
-  width: 92px;       /* соответствует высоте */
-}
-
-.rp-vol-range::-webkit-slider-runnable-track{ height: 7px; }
-.rp-vol-range::-webkit-slider-thumb{
-  width: 14px;
-  height: 14px;
-  margin-top: -3.5px;
-}
-
-.rp-vol-range::-moz-range-track{ height: 7px; }
-.rp-vol-range::-moz-range-thumb{
-  width: 14px;
-  height: 14px;
-}
-
-.rp-vol-pct{
-  font-size: 12px;
-}
-/* ===== Make record player a bit smaller ===== */
-.rp{
-  width:100%;
-  display:grid;
-  gap:14px;
-  justify-items:center;
-}
-
-/* slightly smaller deck */
-.rp-deck{
-  width: min(340px, 100%);
-  aspect-ratio: 1 / 1;
-  margin: 0 auto;
-  position: relative;
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.10));
-  box-shadow: 0 14px 30px rgba(0,0,0,.22), 0 0 0 2px rgba(255,255,255,.05) inset;
-}
-
 /* ===== Controls panel under vinyl ===== */
 .rp-controls{
   width: min(520px, 100%);
@@ -382,6 +301,7 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
   cursor: pointer;
 }
 .rp-play:hover{ background: rgba(255,255,255,.10); }
+
 .rp-play-top{ font-size: 13px; font-weight: 700; opacity: .9; }
 .rp-play-icon{ font-size: 22px; line-height: 1; opacity: .95; }
 
@@ -414,7 +334,7 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
   background: rgba(255,255,255,.26);
 }
 
-/* volume block (right) */
+/* volume */
 .rp-volbox{
   border:1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.04);
@@ -429,7 +349,6 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
 .rp-vol-label{ font-size: 12px; opacity: .8; }
 .rp-vol-pct{ font-size: 12px; opacity: .75; }
 
-/* range styling (nice + compact) */
 .rp-vol-range{ width: 100%; }
 .rp-vol-range::-webkit-slider-runnable-track{ height: 7px; border-radius: 999px; background: rgba(255,255,255,.20); }
 .rp-vol-range::-webkit-slider-thumb{
@@ -447,4 +366,531 @@ body { font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto
   background: rgba(255,255,255,.70);
   border: 1px solid rgba(0,0,0,.25);
 }
+/* small prev/next buttons + layout */
+.rp-controls{
+  width: min(520px, 100%);
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.10);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.04) inset;
+  border-radius: 12px;
+  padding: 12px;
 
+  display: grid;
+  grid-template-columns: 44px 96px 44px 1fr 120px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.rp-btn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  border-radius: 10px;
+  display:grid;
+  place-items:center;
+  font-size: 22px;
+  line-height: 1;
+  opacity:.9;
+}
+.rp-btn:hover{ background: rgba(255,255,255,.10); }
+
+.rp-info{ min-width: 0; display:flex; flex-direction:column; justify-content:center; gap: 8px; }
+
+.rp-queue{ display:flex; justify-content:flex-end; }
+.rp-queue-pill{
+  font-size: 12px;
+  opacity:.75;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+/* ===== Cake (clean full) ===== */
+
+.cake-stage{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  margin:10px auto 0;
+  padding-top:clamp(70px, 10vh, 120px);;
+  min-height:360px;
+}
+
+.cake{
+  position:relative;
+  width:340px;
+  height:240px;
+  flex:0 0 auto;
+  margin:0 auto;
+  filter:drop-shadow(0 22px 34px rgba(0,0,0,.28));
+}
+
+/* table shadow */
+.cake-shadow{
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  width:270px;
+  height:30px;
+  border-radius:999px;
+  background:rgba(0,0,0,.35);
+  filter:blur(6px);
+  opacity:.9;
+}
+
+/* ===== tiers base ===== */
+.cake-bot,.cake-mid,.cake-top{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  border-radius:24px;
+  border:1px solid rgba(255,255,255,.12);
+  overflow:hidden;
+
+  box-shadow:
+    0 18px 24px rgba(0,0,0,.18),
+    0 1px 0 rgba(255,255,255,.10) inset,
+    0 -10px 18px rgba(0,0,0,.10) inset;
+}
+
+/* ===== sizes + creamy colors ===== */
+.cake-bot{
+  bottom:22px;
+  width:292px;
+  height:98px;
+  border-radius:26px;
+  --c1:#f6ddb9; --c2:#ecc79c; --c3:#dfb181;
+
+  box-shadow:
+    0 22px 30px rgba(0,0,0,.18),
+    0 1px 0 rgba(255,255,255,.10) inset,
+    0 -14px 22px rgba(0,0,0,.12) inset;
+}
+
+.cake-mid{
+  bottom:102px;
+  width:236px;
+  height:78px;
+  --c1:#f9e3c7; --c2:#efcfa6; --c3:#dfb083;
+
+  box-shadow:
+    0 16px 22px rgba(0,0,0,.16),
+    0 1px 0 rgba(255,255,255,.10) inset,
+    0 -12px 18px rgba(0,0,0,.10) inset;
+}
+
+.cake-top{
+  bottom:156px;
+  width:196px;
+  height:62px;
+  --c1:#fae7cf; --c2:#f0d2ad; --c3:#dfb28a;
+
+  box-shadow:
+    0 14px 20px rgba(0,0,0,.14),
+    0 1px 0 rgba(255,255,255,.10) inset,
+    0 -10px 16px rgba(0,0,0,.10) inset;
+}
+
+/* ===== IMPORTANT: no pseudo conflicts =====
+   ::before = cream cap
+   ::after  = sponge lines
+   chocolate = background (1 row only) */
+
+/* bottom + mid: ONE row chocolate scallops (repeat-x only) */
+.cake-bot,
+.cake-mid{
+  background:
+    /* tiny highlight on each drip */
+    radial-gradient(circle at 16px 14px,
+      rgba(255,255,255,.10) 0 8px,
+      rgba(255,255,255,0) 9px
+    ) 0 12px/32px 26px repeat-x,
+
+    /* chocolate drip circles */
+    radial-gradient(circle at 16px 14px,
+      #5a2e22 0 16px,
+      transparent 17px
+    ) 0 12px/32px 26px repeat-x,
+
+    /* soft top highlight */
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.22),
+      rgba(255,255,255,0) 55%
+    ),
+
+    /* cake body */
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%);
+}
+
+/* top: chocolate glaze on upper part + ONE row drips on border */
+.cake-top{
+  background:
+    /* glaze */
+    linear-gradient(180deg, rgba(92,46,34,.92), rgba(58,28,22,.80)) 0 0/100% 44% no-repeat,
+
+    /* drips on glaze edge (1 row) */
+    radial-gradient(circle at 16px 4px,
+      rgba(92,46,34,.98) 0 16px,
+      transparent 17px
+    ) 0 calc(44% - 2px)/32px 18px repeat-x,
+
+    /* soft highlight */
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.20),
+      rgba(255,255,255,0) 55%
+    ),
+
+    /* cake body */
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%);
+}
+
+/* ===== sponge lines (subtle) ===== */
+.cake-bot::after,
+.cake-mid::after,
+.cake-top::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0) 26%,
+    rgba(120,70,45,.10) 27%,
+    rgba(120,70,45,.10) 30%,
+    rgba(255,255,255,0) 31%,
+    rgba(255,255,255,0) 62%,
+    rgba(120,70,45,.08) 63%,
+    rgba(120,70,45,.08) 66%,
+    rgba(255,255,255,0) 67%,
+    rgba(255,255,255,0) 100%
+  );
+  opacity:.14;
+  pointer-events:none;
+}
+
+/* ===== cream cap (thin) ===== */
+.cake-bot::before,
+.cake-mid::before,
+.cake-top::before{
+  content:"";
+  position:absolute;
+  left:10px;
+  right:10px;
+  top:-8px;
+  height:22px;
+  border-radius:999px;
+  opacity:.92;
+  background:
+    radial-gradient(circle at 30% 40%,
+      rgba(255,255,255,.55),
+      rgba(255,255,255,.22) 50%,
+      rgba(255,255,255,.10) 100%
+    ),
+    linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.10));
+  box-shadow:
+    0 10px 18px rgba(0,0,0,.10),
+    0 1px 0 rgba(255,255,255,.18) inset;
+}
+
+.cake-top::before{
+  left:12px;
+  right:12px;
+  top:-7px;
+  height:20px;
+}
+
+/* ===== candles "20" ===== */
+.candles-20{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:224px;          /* top tier surface = 156 + 62 = 218, чуть вниз чтобы “стояло” */
+  display:flex;
+  gap:12px;
+  align-items:flex-end;
+  z-index:999;
+  pointer-events:none;
+}
+
+.candleNum{
+  position:relative;
+  font-weight:900;
+  font-size:44px;
+  line-height:1;
+  letter-spacing:-2px;
+  margin-bottom:-6px;  /* “ножки” чуть в торт */
+
+  color:transparent;
+  -webkit-text-stroke:2px rgba(0,0,0,.18);
+  background:repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,.95) 0px,
+    rgba(255,255,255,.95) 6px,
+    rgba(255,130,130,.92) 6px,
+    rgba(255,130,130,.92) 12px
+  );
+  -webkit-background-clip:text;
+  background-clip:text;
+
+  filter:drop-shadow(0 10px 14px rgba(0,0,0,.28));
+}
+
+.candleNum.num0{
+  background:repeating-linear-gradient(
+    90deg,
+    rgba(255,255,255,.95) 0px,
+    rgba(255,255,255,.95) 6px,
+    rgba(255,200,130,.95) 6px,
+    rgba(255,200,130,.95) 12px
+  );
+  -webkit-background-clip:text;
+  background-clip:text;
+}
+
+.candleNum .wick{
+  position:absolute;
+  left:50%;
+  top:-12px;
+  transform:translateX(-50%);
+  width:3px;
+  height:10px;
+  border-radius:2px;
+  background:rgba(0,0,0,.50);
+}
+
+.candleNum .flame{
+  position:absolute;
+  left:50%;
+  top:-34px;
+  transform:translateX(-50%);
+  width:14px;
+  height:18px;
+  border-radius:999px;
+  background:radial-gradient(circle at 50% 30%,
+    rgba(255,255,255,.98),
+    rgba(255,230,150,.95) 40%,
+    rgba(255,145,60,.72) 75%,
+    rgba(0,0,0,0) 100%
+  );
+  transform-origin:50% 90%;
+  animation:flameFlicker .16s infinite alternate ease-in-out;
+}
+
+.candleNum .flame::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:2px;
+  transform:translateX(-50%);
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  background:radial-gradient(circle, rgba(255,170,70,.30), rgba(0,0,0,0) 70%);
+  filter:blur(2px);
+}
+@keyframes flameFlicker{
+  from{ transform:translateX(-50%) rotate(-2deg) scale(1); }
+  to  { transform:translateX(-50%) rotate(2deg) scale(1.08); }
+}
+
+
+
+.candleNum .smoke{
+  position:absolute;
+  left:50%;
+  top:-30px;
+  transform:translateX(-50%);
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  background:rgba(255,255,255,.28);
+  filter:blur(1.6px);
+  opacity:0;
+}
+
+.cake.is-blown .candleNum .flame{ opacity:0; animation:none; }
+.cake.is-blown .candleNum .smoke{
+  opacity:.95;
+  animation:smokeUp 1.5s ease-out infinite;
+}
+
+@keyframes smokeUp{
+  from{ transform:translateX(-50%) translateY(0) scale(.9); opacity:.7; }
+  to  { transform:translateX(-50%) translateY(-22px) scale(1.25); opacity:0; }
+}
+
+/* ===== Make MID + BOT like TOP (glaze + drips) ===== */
+
+/* если кремовая шапка мешает — делаем её тоньше */
+.cake-bot::before,
+.cake-mid::before{
+  height:18px !important;
+  top:-7px !important;
+  opacity:.9 !important;
+}
+
+/* общий цвет шоколада */
+:root{
+  --choco1: rgba(92,46,34,.92);
+  --choco2: rgba(58,28,22,.80);
+  --chocoD: rgba(92,46,34,.98);
+}
+
+/* MID: как TOP */
+.cake-mid{
+  --glazeH: 44%;  /* высота глазури сверху (подгони: 38-50%) */
+
+  background:
+    /* глазурь */
+    linear-gradient(180deg, var(--choco1), var(--choco2))
+      0 0/100% var(--glazeH) no-repeat,
+
+    /* капли по границе глазури (1 ряд) */
+    radial-gradient(circle at 16px 4px,
+      var(--chocoD) 0 16px,
+      transparent 17px
+    ) 0 calc(var(--glazeH) - 2px)/32px 18px repeat-x,
+
+    /* мягкий блик */
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.18),
+      rgba(255,255,255,0) 55%
+    ),
+
+    /* тело торта */
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%) !important;
+}
+
+/* BOT: как TOP, но можно чуть выше глазурь */
+.cake-bot{
+  --glazeH: 42%;
+
+  background:
+    linear-gradient(180deg, var(--choco1), var(--choco2))
+      0 0/100% var(--glazeH) no-repeat,
+
+    radial-gradient(circle at 16px 4px,
+      var(--chocoD) 0 16px,
+      transparent 17px
+    ) 0 calc(var(--glazeH) - 2px)/32px 18px repeat-x,
+
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.18),
+      rgba(255,255,255,0) 55%
+    ),
+
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%) !important;
+}
+
+/* полосы бисквита чуть тише, чтобы не спорили с глазурью */
+.cake-bot::after,
+.cake-mid::after{
+  opacity:.12 !important;
+}
+/* ===== MID + BOT: шоколад сверху как у TOP ===== */
+
+.cake-mid{
+  --glazeH: 44%; /* высота шоколада сверху (подгони 40-50%) */
+  background:
+    /* шоколадная шапка */
+    linear-gradient(180deg, rgba(92,46,34,.92), rgba(58,28,22,.80))
+      0 0/100% var(--glazeH) no-repeat,
+
+    /* капли по краю шоколада (1 ряд) */
+    radial-gradient(circle at 16px 4px,
+      rgba(92,46,34,.98) 0 16px,
+      transparent 17px
+    ) 0 calc(var(--glazeH) - 2px)/32px 18px repeat-x,
+
+    /* мягкий блик */
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.20),
+      rgba(255,255,255,0) 55%
+    ),
+
+    /* тело бисквита */
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%) !important;
+}
+
+.cake-bot{
+  --glazeH: 42%;
+  background:
+    linear-gradient(180deg, rgba(92,46,34,.92), rgba(58,28,22,.80))
+      0 0/100% var(--glazeH) no-repeat,
+
+    radial-gradient(circle at 16px 4px,
+      rgba(92,46,34,.98) 0 16px,
+      transparent 17px
+    ) 0 calc(var(--glazeH) - 2px)/32px 18px repeat-x,
+
+    radial-gradient(circle at 22% 18%,
+      rgba(255,255,255,.20),
+      rgba(255,255,255,0) 55%
+    ),
+
+    linear-gradient(180deg, var(--c1) 0%, var(--c2) 48%, var(--c3) 100%) !important;
+}
+
+/* чтобы кремовая шапка не спорила с шоколадом */
+.cake-mid::before,
+.cake-bot::before{
+  height:18px !important;
+  top:-7px !important;
+  opacity:.88 !important;
+}
+
+/* линии бисквита чуть тише */
+.cake-mid::after,
+.cake-bot::after{
+  opacity:.12 !important;
+}
+/* ===== blow progress (0..1) controls flame size/opacity ===== */
+.cake{ --blow: 0; }
+
+/* пока дуют: пламя становится меньше и ниже, + исчезает */
+.candleNum .flame{
+  opacity: calc(1 - (var(--blow) * 0.9));
+  width:  calc(14px - (var(--blow) * 6px));
+  height: calc(18px - (var(--blow) * 8px));
+  top:    calc(-34px + (var(--blow) * 10px));
+}
+
+/* ореол тоже тише */
+.candleNum .flame::after{
+  opacity: calc(1 - (var(--blow) * 0.85));
+  transform: translateX(-50%) scale(calc(1 - (var(--blow) * 0.35)));
+}
+
+/* ===== blow progress bar ===== */
+.blowbar{
+  margin-top: 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.04) inset;
+  padding: 10px 12px;
+}
+
+.blowbar-top{
+  display:flex;
+  justify-content:space-between;
+  font-size: 12px;
+  color: rgba(255,255,255,.78);
+  margin-bottom: 8px;
+}
+
+.blowbar-track{
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+}
+
+.blowbar-fill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,.16));
+  transition: width 80ms linear;
+}
