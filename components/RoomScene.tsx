@@ -476,7 +476,7 @@ export default function RoomScene() {
 
       This year was heavy, and somehow, knowing you were there made it a little easier to carry things. Thank you for the kindness, the patience, and the presence you gave — whether you knew it or not.
 
-      And honestly, I still remember this one small moment: the next day, on the third floor, you were the first to say hi to me while I was sitting on the couch near the classroom. It’s such a tiny thing, and maybe it shouldn’t mean much — but it stuck with me. Moments like that stay in my head, and they just make me appreciate you even more.
+      And honestly, I still remember this one small moment from school: the next day, on the third floor, you were the first to say hi to me while I was sitting on the couch near the classroom. It’s such a tiny thing, and maybe it shouldn’t mean much — but it stuck with me. Moments like that stay in my head, and they just make me appreciate you even more.
 
       Today, I hope you feel loved in the simple ways: good music, warm messages, small comforts, and a few moments where you forget everything else and just smile. I hope this new year of your life brings you peace, healing, and softer days. You deserve everything good in this world!.
 

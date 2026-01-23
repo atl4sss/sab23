@@ -43,7 +43,7 @@ export default function IntroOverlay({
           <div className="mt-2 text-white/90 leading-relaxed text-[15px]">
             I made you this little room as a tiny birthday thing - it’s basically a mini game, but it’s all about you
             <br />
-            click objects. open surprises. take your time.
+            click anything that looks clickable. open surprises. take your time.
             <br />
             (and sound on is recommended 🎵)
           </div>
