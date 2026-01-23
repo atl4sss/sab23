@@ -45,7 +45,7 @@ export default function IntroOverlay({
             <br />
             click anything that looks clickable. open surprises. take your time.
             <br />
-            (and sound on is recommended 🎵)
+            for full screen, press ⌃⌘F (Control + Command + F) (and sound on is recommended 🎵)
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
